@@ -174,7 +174,7 @@ if (test)
     if(WINDOWS) # VS2012 doesn't support correctly the tuples yet
         add_definitions( /D _VARIADIC_MAX=10 )
     endif()
-    add_subdirectory(lib/gtest-1.6.0)
+    add_subdirectory(lib/gtest-1.10.0)
     enable_testing()
     include_directories(SYSTEM ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
