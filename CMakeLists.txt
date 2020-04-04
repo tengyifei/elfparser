@@ -44,10 +44,12 @@ else()
     endif()
 endif()
 
-#package locations
+# package locations
 set(CMAKE_MODULE_PATH ${${PROJECT_NAME}_SOURCE_DIR}/CMake)
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.46 COMPONENTS program_options iostreams system filesystem regex REQUIRED)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+find_package(Boost 1.72 COMPONENTS program_options iostreams system filesystem regex REQUIRED)
 
 # includes
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
@@ -73,7 +75,7 @@ if (qt)
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
     set(CMAKE_AUTOMOC ON)
     if (APPLE)
-        set(CMAKE_PREFIX_PATH "~/Qt/5.3/clang_64")
+        set(CMAKE_PREFIX_PATH "/usr/local/opt/qt")
     else()
         if(windows)
             set(CMAKE_PREFIX_PATH "C:\\Qt\\5.3\\msvc2013_64\\")
