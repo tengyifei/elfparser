@@ -196,7 +196,6 @@ function(fixup_qt5_executable executable)
     write_qt5_conf("${qt_conf_dir}" "${qt_conf_contents}")
   endif()
 
-  message("${executable}")
   fixup_bundle("${executable}" "${libs}" "${dirs}")
 endfunction()
 
@@ -296,6 +295,14 @@ function(install_qt5_executable executable)
   if(QT_BINARY_DIR)
     list(APPEND dirs "${QT_BINARY_DIR}")
   endif()
+  if(TARGET Qt5::Core)
+	get_property(_locCore TARGET Qt5::Core PROPERTY LOCATION_RELEASE)
+	get_filename_component(_loc ${_locCore} DIRECTORY)
+	message(STATUS "Adding Qt 5 directory: ${_loc}")
+	list(APPEND dirs "${_loc}")
+  else()
+    message(FATAL_ERROR "No Qt5::Core target found, ensure it is available")
+  endif()
   if(component)
     set(component COMPONENT ${component})
   else()
@@ -318,7 +325,24 @@ function(install_qt5_executable executable)
     if(APPLE)
       get_property(loc TARGET Qt5::QCocoaIntegrationPlugin
         PROPERTY LOCATION_RELEASE)
-      install_qt5_plugin("${loc}" "${executable}" 0 installed_plugin_paths "PlugIns" "${component}")
+      install_qt5_plugin("${loc}" "${executable}" 0 installed_plugin_paths
+        "PlugIns" "${component}")
+      list(APPEND libs ${installed_plugin_paths})
+      get_property(loc TARGET Qt5::QMacStylePlugin
+        PROPERTY LOCATION_RELEASE)
+      install_qt5_plugin("${loc}" "${executable}" 0 installed_plugin_paths
+        "PlugIns" "${component}")
+      list(APPEND libs ${installed_plugin_paths})
+    elseif(WIN32)
+      get_property(loc TARGET Qt5::QWindowsIntegrationPlugin
+        PROPERTY LOCATION_RELEASE)
+      install_qt5_plugin("${loc}" "${executable}" 0 installed_plugin_paths
+        "" "${component}")
+      list(APPEND libs ${installed_plugin_paths})
+      get_property(loc TARGET Qt5::QWindowsVistaStylePlugin
+        PROPERTY LOCATION_RELEASE)
+      install_qt5_plugin("${loc}" "${executable}" 0 installed_plugin_paths
+        "" "${component}")
       list(APPEND libs ${installed_plugin_paths})
     endif()
     foreach(plugin ${qtplugins})
@@ -333,7 +357,7 @@ function(install_qt5_executable executable)
   install(CODE
   "include(\"${DeployQt5_cmake_dir}/DeployQt5.cmake\")
   set(BU_CHMOD_BUNDLE_ITEMS TRUE)
-  FIXUP_QT5_EXECUTABLE(\"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${executable}\" \"\" \"${libs}\" \"${dirs}\" \"${plugins_dir}\" \"${request_qt_conf}\")"
+  fixup_qt5_executable(\"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${executable}\" \"\" \"${libs}\" \"${dirs}\" \"${plugins_dir}\" \"${request_qt_conf}\")"
     ${component}
     )
 endfunction()

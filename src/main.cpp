@@ -131,6 +131,7 @@ namespace
 int main(int p_argCount, char* p_argArray[])
 {
     QApplication app(p_argCount, p_argArray);
+    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     MainWindow window;
     window.show();
     return app.exec();

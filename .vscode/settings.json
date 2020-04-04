@@ -1,6 +1,5 @@
 {
     "cmake.configureOnOpen": true,
-    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
     "files.associations": {
         "__bit_reference": "cpp",
         "__config": "cpp",
@@ -76,5 +75,8 @@
         "utility": "cpp",
         "variant": "cpp",
         "vector": "cpp"
-    }
+    },
+    "cmake.buildArgs": [
+        "-Dqt=ON"
+    ]
 }
