@@ -145,6 +145,28 @@ void AbstractSegments::createDynamic()
     }
 }
 
+namespace {
+
+template <class T>
+class VecProxy {
+private:
+    std::vector<T>& v1, v2;
+public:
+    VecProxy(std::vector<T>& ref1, std::vector<T>& ref2) : v1(ref1), v2(ref2) {}
+    const T& operator[](const size_t& i) const;
+    const size_t size() const;
+};
+
+template <class T>
+const T& VecProxy<T>::operator[](const size_t& i) const{
+    return (i < v1.size()) ? v1[i] : v2[i - v1.size()];
+};
+
+template <class T>
+const size_t VecProxy<T>::size() const { return v1.size() + v2.size(); };
+
+}
+
 void AbstractSegments::generateSegments()
 {
     // Track the string and symbol tables are correlate them using link after
@@ -152,43 +174,42 @@ void AbstractSegments::generateSegments()
     std::size_t tableIndex = 0;
     std::set<std::size_t> strTab;
     std::set<std::size_t> symTab;
-    BOOST_FOREACH(const Segment& section, m_sections)
+    VecProxy<Segment> all_segments(m_sections, m_programs);
+    for (size_t i = 0; i < all_segments.size(); i++)
     {
+        const Segment& section = all_segments[i];
         if (m_offsets.find(m_data + section.getPhysOffset()) == m_offsets.end())
         {
-            if (section.getType() == "K_NOTE")
+            if (section.getType() == "K_NOTE" || section.getType() == "PT_NOTE")
             {
                 m_types.push_back(new NoteSegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_note));
                 m_offsets.insert(m_data + section.getPhysOffset());
             }
-            else if (section.getType() == "K_PROGBITS")
+            else if (section.getType() == "K_PROGBITS" && section.getName() == ".comment")
             {
-                if (section.getName() == ".comment")
-                {
-                    m_types.push_back(new CommentSegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_progbits));
-                    m_offsets.insert(m_data + section.getPhysOffset());
-                }
-                else if (section.getName() == ".gnu_debuglink")
-                {
-                    m_types.push_back(new DebugLinkSegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_progbits));
-                    m_offsets.insert(m_data + section.getPhysOffset());
-                }
-                else if (section.getName() == ".interp")
-                {
-                    m_types.push_back(new InterpSegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_progbits));
-                    m_offsets.insert(m_data + section.getPhysOffset());
-                }
-                else if (section.getName() == ".rodata")
-                {
-                    m_types.push_back(new ReadOnlySegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_progbits));
-                    m_offsets.insert(m_data + section.getPhysOffset());
-                }
-                else if (m_ctorsArray.getOffset() == 0 && section.getName() == ".ctors")
-                {
-                    m_ctorsArray.set(m_data, m_size, section.getPhysOffset(),
-                                     section.getSize() / (m_is64 ? 8 : 4), m_is64, m_isLE);
-                    m_offsets.insert(m_data + section.getPhysOffset());
-                }
+                m_types.push_back(new CommentSegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_progbits));
+                m_offsets.insert(m_data + section.getPhysOffset());
+            }
+            else if (section.getType() == "K_PROGBITS" && section.getName() == ".gnu_debuglink")
+            {
+                m_types.push_back(new DebugLinkSegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_progbits));
+                m_offsets.insert(m_data + section.getPhysOffset());
+            }
+            else if ((section.getType() == "K_PROGBITS" && section.getName() == ".interp") || (section.getType() == "PT_INTERP"))
+            {
+                m_types.push_back(new InterpSegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_progbits));
+                m_offsets.insert(m_data + section.getPhysOffset());
+            }
+            else if (section.getType() == "K_PROGBITS" && section.getName() == ".rodata")
+            {
+                m_types.push_back(new ReadOnlySegment(m_data, section.getPhysOffset(), section.getSize(), elf::k_progbits));
+                m_offsets.insert(m_data + section.getPhysOffset());
+            }
+            else if (section.getType() == "K_PROGBITS" && m_ctorsArray.getOffset() == 0 && section.getName() == ".ctors")
+            {
+                m_ctorsArray.set(m_data, m_size, section.getPhysOffset(),
+                                    section.getSize() / (m_is64 ? 8 : 4), m_is64, m_isLE);
+                m_offsets.insert(m_data + section.getPhysOffset());
             }
             else if (section.getType() == "K_STRTAB")
             {
@@ -233,7 +254,7 @@ void AbstractSegments::generateSegments()
             }
             else
             {
-                m_types.push_back(new StringTableSegment(m_data, 
+                m_types.push_back(new StringTableSegment(m_data,
                     m_sections[link].getPhysOffset(), m_sections[link].getSize(), elf::k_strtab));
                 m_offsets.insert(m_data + m_sections[link].getPhysOffset());
             }
@@ -422,7 +443,7 @@ std::string AbstractSegments::printSegment(boost::uint64_t p_offset) const
         return m_ctorsArray.printToStd();
     }
 
-    return std::string();
+    return std::string("No Info");
 }
 
 std::string AbstractSegments::printToStdOut() const
