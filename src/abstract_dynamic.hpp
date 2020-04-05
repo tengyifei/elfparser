@@ -1,35 +1,34 @@
 #ifndef ABSTRACT_DYNAMIC_HPP
 #define ABSTRACT_DYNAMIC_HPP
 
-#include <boost/cstdint.hpp>
 #include <string>
 
-class AbstractDynamicEntry
-{
-public:
-    AbstractDynamicEntry(boost::uint64_t p_tag, boost::uint64_t p_value);
-    AbstractDynamicEntry(const AbstractDynamicEntry& p_rhs);
-    ~AbstractDynamicEntry();
+#include <boost/cstdint.hpp>
 
-    boost::uint64_t getTag() const;
-    boost::uint64_t getValue() const;
+class AbstractDynamicEntry {
+ public:
+  AbstractDynamicEntry(boost::uint64_t p_tag, boost::uint64_t p_value);
+  AbstractDynamicEntry(const AbstractDynamicEntry& p_rhs);
+  ~AbstractDynamicEntry();
 
-    bool hasString() const;
-    void setString(const std::string& p_value);
-    const std::string& getString() const;
-    void createString(const char* p_strOffset);
+  boost::uint64_t getTag() const;
+  boost::uint64_t getValue() const;
 
-    std::string printToStdOut() const;
+  bool hasString() const;
+  void setString(const std::string& p_value);
+  const std::string& getString() const;
+  void createString(const char* p_strOffset);
 
-private:
+  std::string printToStdOut() const;
 
-    //! Disable evil things
-    AbstractDynamicEntry& operator=(const AbstractDynamicEntry& p_rhs);
+ private:
+  //! Disable evil things
+  AbstractDynamicEntry& operator=(const AbstractDynamicEntry& p_rhs);
 
-private:
-    boost::uint64_t m_tag;
-    boost::uint64_t m_value;
-    std::string m_stringValue;
+ private:
+  boost::uint64_t m_tag;
+  boost::uint64_t m_value;
+  std::string m_stringValue;
 };
 
 #endif

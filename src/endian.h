@@ -26,6 +26,7 @@
 #define le64toh(x) OSSwapLittleToHostInt64(x)
 #elif WINDOWS
 #include <winsock2.h>
+
 #include <cstdlib>
 
 #define htons(x) _byteswap_ushort(x)
@@ -40,4 +41,4 @@
 #define le64toh(x) (x)
 #endif
 
-#endif	/* __FINK_ENDIANDEV_PKG_ENDIAN_H__ */
+#endif /* __FINK_ENDIANDEV_PKG_ENDIAN_H__ */

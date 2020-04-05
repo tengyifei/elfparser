@@ -1,19 +1,19 @@
 #ifndef ABSTRACT_SEGMENTS_HPP
 #define ABSTRACT_SEGMENTS_HPP
 
+#include <cstddef>
 #include <map>
 #include <set>
-#include <vector>
 #include <string>
-#include <cstddef>
-#include <boost/cstdint.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
+#include <vector>
 
-#include "symbols.hpp"
-#include "initarray.hpp"
 #include "dynamicsection.hpp"
+#include "initarray.hpp"
 #include "segment_types/segment_type.hpp"
 #include "structures/capabilities.hpp"
+#include "symbols.hpp"
+#include <boost/cstdint.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 class AbstractSectionHeader;
 class AbstractProgramHeader;
@@ -24,114 +24,109 @@ class Segment;
  * section headers. Because ELF is sketchy the section headers don't have to be
  * present and they are a big target for people to insert fake data.
  */
-class AbstractSegments
-{
-public:
+class AbstractSegments {
+ public:
+  //! Default initializes the member variables
+  AbstractSegments();
 
-    //! Default initializes the member variables
-    AbstractSegments();
+  //! Releases the segments
+  ~AbstractSegments();
 
-    //! Releases the segments
-    ~AbstractSegments();
+  std::set<std::string> getFiles() const;
 
-    std::set<std::string> getFiles() const;
+  void setStart(const char* p_data, boost::uint32_t p_size, bool p_is64, bool p_isLE, bool p_isDY);
 
-    void setStart(const char* p_data, boost::uint32_t p_size,
-                  bool p_is64, bool p_isLE, bool p_isDY);
+  void makeSegmentFromSectionHeader(const AbstractSectionHeader& p_segment);
 
-    void makeSegmentFromSectionHeader(const AbstractSectionHeader& p_segment);
+  void makeSegmentFromProgramHeader(const AbstractProgramHeader& p_header);
 
-    void makeSegmentFromProgramHeader(const AbstractProgramHeader& p_header);
+  void createDynamic();
+  void generateSegments();
 
-    void createDynamic();
-    void generateSegments();
+  //! \return the base address
+  boost::uint64_t getBaseAddress() const;
 
-    //! \return the base address
-    boost::uint64_t getBaseAddress() const;
+  boost::uint64_t getOffsetFromVirt(boost::uint64_t p_virtual) const;
 
-    boost::uint64_t getOffsetFromVirt(boost::uint64_t p_virtual) const;
+  /*!
+   * Calls into the various segments for evaluation / scoring information.
+   * \param[in,out] p_reasons stores the scoring and reasons
+   * \param[in,out] p_capabilities stores information about what the binary does
+   */
+  void evaluate(std::vector<std::pair<boost::int32_t, std::string>>& p_reasons,
+                std::map<elf::Capabilties, std::set<std::string>>& p_capabilities) const;
 
-    /*!
-     * Calls into the various segments for evaluation / scoring information.
-     * \param[in,out] p_reasons stores the scoring and reasons
-     * \param[in,out] p_capabilities stores information about what the binary does
-     */
-    void evaluate(std::vector<std::pair<boost::int32_t, std::string> >& p_reasons,
-                  std::map<elf::Capabilties, std::set<std::string> >& p_capabilities) const;
+  /*!
+   *  Tries to guess which family of malware the binary is part of - if at all
+   */
+  std::string determineFamily() const;
 
-    /*!
-     *  Tries to guess which family of malware the binary is part of - if at all
-     */
-    std::string determineFamily() const;
+  //! \return the string at the given offset
+  std::string printSegment(boost::uint64_t p_offset) const;
 
-    //! \return the string at the given offset
-    std::string printSegment(boost::uint64_t p_offset) const;
+  //! \return a string version of all segments. Name is a bit misleading.
+  std::string printToStdOut() const;
 
-    //! \return a string version of all segments. Name is a bit misleading.
-    std::string printToStdOut() const;
+  std::vector<AbstractSymbol> getAllSymbols() const;
+  const DynamicSection& getDynamicSection() const;
+  const Symbols& getDynamicSymbols() const;
 
-    std::vector<AbstractSymbol> getAllSymbols() const;
-    const DynamicSection& getDynamicSection() const;
-    const Symbols& getDynamicSymbols() const;
+ private:
+  //! Disable evil things
+  AbstractSegments(const AbstractSegments& p_rhs);
+  AbstractSegments& operator=(const AbstractSegments& p_rhs);
 
-private:
+ private:
+  //! the start of the file in memory
+  const char* m_data;
 
-    //! Disable evil things
-    AbstractSegments(const AbstractSegments& p_rhs);
-    AbstractSegments& operator=(const AbstractSegments& p_rhs);
+  //! the size of the file in memory
+  boost::uint32_t m_size;
 
-private:
+  //! All the section segments
+  std::vector<Segment> m_sections;
 
-    //! the start of the file in memory
-    const char* m_data;
+  //! All the program segments
+  std::vector<Segment> m_programs;
 
-    //! the size of the file in memory
-    boost::uint32_t m_size;
+  //! All the sections/programs converted to subtypes
+  boost::ptr_vector<SegmentType> m_types;
 
-    //! All the section segments
-    std::vector<Segment> m_sections;
+  //! All the offsets so we don't parse the same thing twice
+  std::set<const char*> m_offsets;
 
-    //! All the program segments
-    std::vector<Segment> m_programs;
+  //! The base address. Taken from the first PT_LOAD
+  boost::uint64_t m_baseAddress;
 
-    //! All the sections/programs converted to subtypes
-    boost::ptr_vector<SegmentType> m_types;
+  //! A fully populated dynamic section
+  DynamicSection m_dynamic;
 
-    //! All the offsets so we don't parse the same thing twice
-    std::set<const char*> m_offsets;
+  //! A populated list of the symbols
+  Symbols m_dynSymbols;
 
-    //! The base address. Taken from the first PT_LOAD
-    boost::uint64_t m_baseAddress;
+  //! Other symbols
+  boost::ptr_vector<Symbols> m_otherSymbols;
 
-    //! A fully populated dynamic section
-    DynamicSection m_dynamic;
+  //! the init array
+  InitArray m_initArray;
 
-    //! A populated list of the symbols
-    Symbols m_dynSymbols;
+  //! the ctors array
+  InitArray m_ctorsArray;
 
-    //! Other symbols
-    boost::ptr_vector<Symbols> m_otherSymbols;
+  //! indicates if we set the base address yet
+  bool m_setBase;
 
-    //! the init array
-    InitArray m_initArray;
+  //! indicates if this is 64 bit
+  bool m_is64;
 
-    //! the ctors array
-    InitArray m_ctorsArray;
+  //! indicates if this is LE
+  bool m_isLE;
 
-    //! indicates if we set the base address yet
-    bool m_setBase;
+  //! indicates if this is an so or executable
+  bool m_isDY;
 
-    //! indicates if this is 64 bit
-    bool m_is64;
-
-    //! indicates if this is LE
-    bool m_isLE;
-
-    //! indicates if this is an so or executable
-    bool m_isDY;
-
-    //! indicates if we detected a fake dynamic string table
-    bool m_fakeDynamicStringTable;
+  //! indicates if we detected a fake dynamic string table
+  bool m_fakeDynamicStringTable;
 };
 
 #endif
